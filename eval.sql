@@ -2,7 +2,7 @@ DROP DATABASE IF EXISTS eval;
 CREATE DATABASE eval;
 USE eval;
 
-CREATE TABLE client(
+CREATE TABLE clients(
   cli_num INT AUTO_INCREMENT NOT NULL,
   cli_nom VARCHAR (50),
   cli_adresse VARCHAR (155),
@@ -21,16 +21,17 @@ CREATE TABLE commande(
   com_date DATETIME,
   com_obs VARCHAR (50),
   cli_num INT,
-  FOREIGN KEY (cli_num) REFERENCES client(cli_num)
+  FOREIGN KEY (cli_num) REFERENCES clients(cli_num)
 );
 
 CREATE TABLE est_compose(
-  com_num INT AUTO_INCREMENT NOT NULL,
-  pro_num INT AUTO_INCREMENT NOT NULL,
+  com_num INT NOT NULL,
+  pro_num INT NOT NULL,
   est_qte INT,
   PRIMARY KEY (com_num,pro_num),
   FOREIGN KEY (com_num) REFERENCES commande(com_num),
   FOREIGN KEY (pro_num) REFERENCES produit(pro_num)
 );
 
-CREATE INDEX `nom` ON `client`;
+CREATE INDEX `nom` ON `clients` (`cli_nom`);
+SHOW INDEX FROM CLIENTs ;
