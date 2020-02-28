@@ -48,3 +48,65 @@ SELECT MAX(OrderDate) AS "Date de dernière commandes" from orders WHERE Custome
 SELECT ROUND(AVG(DATEDIFF(ShippedDate, OrderDate))) AS "Délai moyen de livraison en jours" FROM orders
 -- MAX Ressort la derniere valeur en date ou la max en fonction.
 --Round = arrondir vers un nombre entier. AVG Faire la moyenne
+
+/* PARTIE 2 : Procédures stockées */
+
+-- sur la requête 9
+DELIMITER |
+CREATE PROCEDURE depuis_quand (IN nom varchar(40))
+BEGIN
+	SELECT MAX(OrderDate) AS `Date de dernière commande`
+	FROM Orders, Customers
+	WHERE orders.CustomerID=Customers.CustomerID AND Customers.CompanyName=nom;
+END |
+DELIMITER ;
+
+CALL depuis_quand('Du monde entier');
+
+--sur la requête 10
+DELIMITER |
+CREATE PROCEDURE delais
+BEGIN
+	SELECT ROUND(AVG(DATEDIFF(ShippedDate,OrderDate))) AS `Delai moyen de livraison en jours`   /* ROUND arrondis la moyenne AVG de la différence des dates de commande et d'arrivé DATEDIFF */
+	FROM Orders;
+END |
+DELIMITER ;
+
+/* PARTIE 3 : règle de gestion */
+
+-- Il faudrait faire un trigger, par exemple pour Northwind :
+ DELIMITER |
+ CREATE TRIGGER regle_gestion AFTER INSERT ON `order details`
+ FOR EACH ROW
+ BEGIN
+	DECLARE num_product INT(11);
+	DECLARE num_order INT(11);
+	DECLARE country_supplier VARCHAR(15);
+	DECLARE country_customer VARCHAR(15);
+	SET num_product = NEW.ProductID;
+	SET num_order = NEW.OrderID;
+	SET country_supplier = (
+		SELECT suppliers.Country
+		FROM suppliers
+		INNER JOIN products ON Products.SupplierID=Suppliers.SupplierID
+		WHERE products.ProductID=num_product
+	);
+	SET country_customer = (
+		SELECT customers.Country
+		FROM customers
+		INNER JOIN orders ON orders.CustomerID=customers.CustomerID
+		WHERE orders.OrderID=num_order
+	);
+	IF country_customer <> country_supplier THEN
+		SIGNAL SQLSTATE '40000' SET MESSAGE_TEXT = 'Un problème est survenu. Règle de gestion : pas de livraison entre 2 pays différent !';
+	END IF;
+ END |
+ DELIMITER ;
+ 
+ /* test du trigger*/
+ INSERT INTO `order details` (OrderID,ProductID,UnitPrice) VALUES ('10248','1','14.0000')
+INSERT INTO `order details` (OrderID,ProductID,UnitPrice) VALUES ('10249','25','14.0000')
+
+/* Declaration des vcariables pour récuperer les valeurs de la requetes Puis on attribut l'id du produit et celui de la commande correspondant a notre requetes INSERT .
+Puis pour faire notre verification on attribut (grace a un select) le pays du fournisseur et celui du client .
+Nous procedons ensuite a une verification entre les deux pays et si les deux pays sont different alors la requetes INSERT ne se fera pas en affichant un message d'erreur , dans l'auters cas la requete s'effectue sans emcombres . */
